@@ -17,7 +17,7 @@ namespace gameio {
         check(game->status == 1, "game over");
         check((game->redteam == winner || game->blueteam == winner), "team is not playing");
 
-        record_index records(get_self(), winner.value);
+        record_index records(get_self(), game->id);
         auto rowid = records.available_primary_key();
         rowid = rowid > 0 ? rowid : 1;
 
@@ -27,6 +27,7 @@ namespace gameio {
 
             row.id = rowid;
             row.user = from;
+            row.winner = winner;
             row.quantity = quantity;
             row.timestamp = timestamp;
         });
@@ -97,11 +98,13 @@ namespace gameio {
         teams.modify(ft, get_self(), [&](auto& row){
 
             row.gameid = rowid;
+            row.playing = true;
         });
 
         teams.modify(st, get_self(), [&](auto& row){
 
             row.gameid = rowid;
+            row.playing = true;
         });
     }
 
@@ -145,7 +148,7 @@ namespace gameio {
         check(game->status == 1, "Game over");
         check((game->redteam == winner || game->blueteam == winner), "winner don't playing");
 
-        calculate(gameid, winner);
+//        calculate(gameid, winner);
 
         auto timestamp = now();
         games.modify(game, get_self(), [&](auto& row){
@@ -156,8 +159,27 @@ namespace gameio {
         });
 
         // delete all record
-        clear(game->redteam, game->id);
-        clear(game->blueteam, game->id);
+//        clear(game->redteam, game->id);
+//        clear(game->blueteam, game->id);
+
+        auto redteam = teams.find(game->redteam.value);
+        if (redteam != teams.end()){
+
+            teams.modify(redteam, get_self(), [&](auto& row){
+                row.gameid = 0;
+                row.playing = false;
+            });
+        }
+
+        auto blueteam = teams.find(game->blueteam.value);
+        if (blueteam != teams.end()){
+            teams.modify(blueteam, get_self(), [&](auto& row){
+
+               row.gameid = 0;
+               row.playing = false;
+            });
+        }
+
     }
 
     void betgame::calculate(uint64_t gameid, name winner){
@@ -185,13 +207,45 @@ namespace gameio {
         }
     }
 
-    void betgame::claim(name account){
+    void betgame::claim(name account, uint64_t gameid){
 
         require_auth(account);
 
-        auto user = users.find(user.value);
+        // 查询游戏信息
+        auto game = games.find(gameid);
+        check(game != games.end(), "Game don't exists");
+        check(game->status == 0, "Game does'n end");
+
+        // 查询用户信息
+        auto user = users.find(account.value);
         check(user != users.end(), "user don't exists");
         check(user->reward.amount > 0, "no reward for claim");
+
+        // 找出投注记录
+        record_index records(get_self(), gameid);
+        auto secondary = records.get_index<name("user")>();
+        auto bet_records = records.find(account.value);
+
+        auto total = game->ramount + game->bamount;
+        auto pool = game->ramount;
+        if (game->blueteam == game->winner){
+
+            pool = game->bamount;
+        }
+
+        // 判断胜利的记录
+        for (auto &record : records){
+
+            if (game->winner == record.winner){
+
+                auto reward = record.quantity / pool * total;
+                users.modify(user, get_self(), [&](auto& row){
+
+                    row.reward += reward;
+                    row.totalreward += reward;
+                });
+            }
+        }
 
         auto temp = zero();
         auto timestamp = now();
