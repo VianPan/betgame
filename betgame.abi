@@ -124,10 +124,6 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "reward",
-                    "type": "asset"
-                },
-                {
                     "name": "claimed",
                     "type": "bool"
                 }

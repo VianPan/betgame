@@ -104,7 +104,6 @@ namespace gameio{
             name winner;
             asset quantity;
             uint64_t timestamp;
-            asset reward;
             bool claimed;
 
             uint64_t primary_key() const {
