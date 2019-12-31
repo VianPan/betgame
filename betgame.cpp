@@ -72,7 +72,8 @@ namespace gameio {
         }
     }
 
-    void betgame::start(name red, name blue){
+    // start a game （only
+    void betgame::start(name red, name blue, name admin){
         auto ft = teams.find(red.value);
         auto st = teams.find(blue.value);
 
@@ -89,6 +90,7 @@ namespace gameio {
             row.id = rowid;
             row.redteam = red;
             row.blueteam = blue;
+            row.admin = admin;
             row.timestamp = timestamp;
             row.ramount = temp;
             row.bamount = temp;
@@ -137,8 +139,8 @@ namespace gameio {
         }
     }
 
+    // 发起结果录入，只有指定的管理员能进行操作
     void betgame::lottery(uint64_t gameid, name winner){
-        require_auth(get_self());
 
         auto team = teams.find(winner.value);
         check(team != teams.end(), "Team don't exists");
@@ -148,7 +150,7 @@ namespace gameio {
         check(game->status == 1, "Game over");
         check((game->redteam == winner || game->blueteam == winner), "winner don't playing");
 
-//        calculate(gameid, winner);
+        require_auth(game->admin);
 
         auto timestamp = now();
         games.modify(game, get_self(), [&](auto& row){
@@ -157,10 +159,6 @@ namespace gameio {
             row.winner = winner;
             row.timestamp = timestamp;
         });
-
-        // delete all record
-//        clear(game->redteam, game->id);
-//        clear(game->blueteam, game->id);
 
         auto redteam = teams.find(game->redteam.value);
         if (redteam != teams.end()){
@@ -182,49 +180,23 @@ namespace gameio {
 
     }
 
-    void betgame::calculate(uint64_t gameid, name winner){
-
-        auto game = games.find(gameid);
-        record_index records(get_self(), winner.value);
-
-        for (auto &record : records){
-
-            auto total = game->ramount + game->bamount;
-            auto user = users.find(record.user.value);
-            auto pool = game->ramount;
-
-            if (game->blueteam == winner){
-
-                pool = game->bamount;
-            }
-
-            auto reward = total / pool * record.quantity;
-            users.modify(user, get_self(), [&](auto& row){
-
-                row.reward += reward;
-                row.totalreward += reward;
-            });
-        }
-    }
-
-    void betgame::claim(name account, uint64_t gameid){
+    void betgame::claim(uint64_t gameid, name account){
 
         require_auth(account);
 
         // 查询游戏信息
         auto game = games.find(gameid);
         check(game != games.end(), "Game don't exists");
-        check(game->status == 0, "Game does'n end");
+        check(game->status == 2, "Game does'n end");
 
         // 查询用户信息
         auto user = users.find(account.value);
         check(user != users.end(), "user don't exists");
-        check(user->reward.amount > 0, "no reward for claim");
 
         // 找出投注记录
         record_index records(get_self(), gameid);
         auto secondary = records.get_index<name("user")>();
-        auto bet_records = records.find(account.value);
+        auto bet_records = secondary.find(account.value);
 
         auto total = game->ramount + game->bamount;
         auto pool = game->ramount;
@@ -234,19 +206,32 @@ namespace gameio {
         }
 
         // 判断胜利的记录
-        for (auto &record : records){
+        while (bet_records != secondary.end() && bet_records->user == account){
 
-            if (game->winner == record.winner){
+            print("ratio:", bet_records->quantity.amount * 1.0 / pool.amount, "\n");
+            if (game->winner == bet_records->winner && bet_records->claimed == false){
 
-                auto reward = record.quantity / pool * total;
+                auto reward_amount = total.amount * (bet_records->quantity.amount * 1.0 / pool.amount);
+                auto reward = asset(reward_amount, EOS_SYMBOL);
+
                 users.modify(user, get_self(), [&](auto& row){
 
                     row.reward += reward;
                     row.totalreward += reward;
                 });
+
+               auto record = records.find(bet_records->id);
+               records.modify(record, get_self(), [&](auto& row){
+
+                    row.claimed = true;
+               });
             }
+
+            bet_records++;
         }
 
+        user = users.find(account.value);
+        check(user->reward.amount > 0, "no reward for claim");
         auto temp = zero();
         auto timestamp = now();
 
@@ -279,7 +264,7 @@ namespace gameio {
 
     void betgame::clear(name team, uint64_t gameid){
 
-        record_index records(get_self(), team.value);
+        record_index records(get_self(), gameid);
         std::vector <uint64_t> keyForRecords;
         for (auto &record : records) {
 

@@ -8,12 +8,12 @@
             "base": "",
             "fields": [
                 {
-                    "name": "user",
-                    "type": "name"
-                },
-                {
                     "name": "gameid",
                     "type": "uint64"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -53,6 +53,10 @@
                 },
                 {
                     "name": "winner",
+                    "type": "name"
+                },
+                {
+                    "name": "admin",
                     "type": "name"
                 },
                 {
@@ -122,6 +126,10 @@
                 {
                     "name": "reward",
                     "type": "asset"
+                },
+                {
+                    "name": "claimed",
+                    "type": "bool"
                 }
             ]
         },
@@ -135,6 +143,10 @@
                 },
                 {
                     "name": "blue",
+                    "type": "name"
+                },
+                {
+                    "name": "admin",
                     "type": "name"
                 }
             ]

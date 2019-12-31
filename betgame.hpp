@@ -29,13 +29,12 @@ namespace gameio{
         void bet(name from, name to, asset quantity, string memo);
 
         ACTION editeam(string action, name title, string description);
-        ACTION start(name red, name blue);
+        ACTION start(name red, name blue, name admin);
         ACTION lottery(uint64_t gameid, name winner);
-        ACTION claim(name user, uint64_t gameid);
+        ACTION claim(uint64_t gameid, name account);
 
         void send(name contract, name user, asset quantity, string memo);
         void clear(name team,uint64_t gameid);
-        void calculate(uint64_t gameid, name winner);
         asset zero();
         uint64_t now();
 
@@ -82,6 +81,7 @@ namespace gameio{
             name redteam;
             name blueteam;
             name winner;
+            name admin;
             asset ramount;
             asset bamount;
             uint64_t rusercount;
@@ -105,18 +105,19 @@ namespace gameio{
             asset quantity;
             uint64_t timestamp;
             asset reward;
+            bool claimed;
 
             uint64_t primary_key() const {
 
                 return id;
             }
 
-            uint128_t get_secondary_1() const {
+            uint64_t user_key() const {
 
                 return user.value;
             }
         };
-        typedef eosio::multi_index<name("record"), record, indexed_by<name("user"), const_mem_fun<record, uint128_t, &record::get_secondary_1>>> record_index;
+        typedef eosio::multi_index<name("record"), record, indexed_by<name("user"), const_mem_fun<record, uint64_t, &record::user_key>>> record_index;
     };
 
 }

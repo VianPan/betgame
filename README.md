@@ -11,7 +11,7 @@ cleos push action [deployaccount] editeam '["create", "batman", "team descriptio
 
 **And use deploy account start new game**
 ```
-cleos push action [deployaccount] start '["superman", "batman"]' -p [deployaccount]
+cleos push action [deployaccount] start '["superman", "batman", "betgameadmin"]' -p [deployaccount]
 ```
 
 **When game is playing, now everyone can bet by transfer action**
@@ -21,6 +21,10 @@ cleos transfer eosioaccount [deployaccount] '1 EOS' 'superman'
 
 **When game result come out, Just lottery with game id**
 ```
-cleos push action [deployaccount] lottery '[1, "superman"]' -p [deployaccount]
+cleos push action [deployaccount] lottery '[1, "superman"]' -p [betgameadmin]
 ```
 
+**And then winner could be claim reward from this game**
+```
+cleos push action [deployaccount] claim '[1, "eosioaccount"]' -p eosioaccount
+```
