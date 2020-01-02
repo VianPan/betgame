@@ -14,9 +14,14 @@ cleos push action [deployaccount] editeam '["create", "batman", "team descriptio
 cleos push action [deployaccount] start '["superman", "batman", "betgameadmin"]' -p [deployaccount]
 ```
 
-**When game is playing, now everyone can bet by transfer action**
+**When game is started, now everyone can bet by transfer action**
 ```
 cleos transfer eosioaccount [deployaccount] '1 EOS' 'superman'
+```
+
+**Now admin must be set game status playing, and can't bet**
+```
+cleos push action [deployaccount] play '[GameId]' -p [betgameadmin]
 ```
 
 **When game result come out, Just lottery with game id**
