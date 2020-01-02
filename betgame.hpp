@@ -30,6 +30,7 @@ namespace gameio{
 
         ACTION editeam(string action, name title, string description);
         ACTION start(name red, name blue, name admin);
+        ACTION play(uint64_t gameid);
         ACTION lottery(uint64_t gameid, name winner);
         ACTION claim(uint64_t gameid, name account);
 

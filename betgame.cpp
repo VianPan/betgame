@@ -13,8 +13,8 @@ namespace gameio {
         check(team != teams.end(), "team dosn't exists");
 
         auto game = games.find(team->gameid);
-        check(game != games.end(), "");
-        check(game->status == 1, "game over");
+        check(game != games.end(), "game does't exists");
+        check(game->status == 1, "game playing or game over");
         check((game->redteam == winner || game->blueteam == winner), "team is not playing");
 
         record_index records(get_self(), game->id);
@@ -110,6 +110,22 @@ namespace gameio {
         });
     }
 
+    void betgame::play(uint64_t gameid){
+
+        auto game = games.find(gameid);
+        check(game != games.end(), "Game don't exists");
+        check(game->status == 1, "game over");
+
+        require_auth(game->admin);
+
+        auto timestamp = now();
+        games.modify(game, get_self(), [&](auto& row){
+
+            row.status = 2;
+            row.timestamp = timestamp;
+        });
+    }
+
     void betgame::editeam(string action, name title, string description){
 
         require_auth(get_self());
@@ -147,7 +163,7 @@ namespace gameio {
 
         auto game = games.find(gameid);
         check(game != games.end(), "Game don't exists");
-        check(game->status == 1, "Game over");
+        check(game->status == 2, "game over or game not start");
         check((game->redteam == winner || game->blueteam == winner), "winner don't playing");
 
         require_auth(game->admin);
@@ -155,7 +171,7 @@ namespace gameio {
         auto timestamp = now();
         games.modify(game, get_self(), [&](auto& row){
 
-            row.status = 2;
+            row.status = 3;
             row.winner = winner;
             row.timestamp = timestamp;
         });
@@ -187,7 +203,7 @@ namespace gameio {
         // 查询游戏信息
         auto game = games.find(gameid);
         check(game != games.end(), "Game don't exists");
-        check(game->status == 2, "Game does'n end");
+        check(game->status == 3, "Game does'n end");
 
         // 查询用户信息
         auto user = users.find(account.value);
