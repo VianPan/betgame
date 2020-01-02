@@ -224,7 +224,6 @@ namespace gameio {
         // 判断胜利的记录
         while (bet_records != secondary.end() && bet_records->user == account){
 
-            print("ratio:", bet_records->quantity.amount * 1.0 / pool.amount, "\n");
             if (game->winner == bet_records->winner && bet_records->claimed == false){
 
                 auto reward_amount = total.amount * (bet_records->quantity.amount * 1.0 / pool.amount);
@@ -247,13 +246,14 @@ namespace gameio {
         }
 
         user = users.find(account.value);
-        check(user->reward.amount > 0, "no reward for claim");
+        if (user->reward.amount > 0){
+
+            // send EOS
+            send(EOS_TOKEN_CONTRACT, account, user->reward, "claim");
+        }
+
         auto temp = zero();
         auto timestamp = now();
-
-        // send EOS
-        send(EOS_TOKEN_CONTRACT, account, user->reward, "claim");
-
         users.modify(user, get_self(), [&](auto& row){
 
             row.reward = temp;
