@@ -19,7 +19,7 @@ cleos push action [deployaccount] start '["superman", "batman", "betgameadmin"]'
 cleos transfer eosioaccount [deployaccount] '1 EOS' 'superman'
 ```
 
-**Now admin must be set game status playing, and can't bet**
+**Now admin must be set game status playing, and everyone can't bet**
 ```
 cleos push action [deployaccount] play '[GameId]' -p [betgameadmin]
 ```
